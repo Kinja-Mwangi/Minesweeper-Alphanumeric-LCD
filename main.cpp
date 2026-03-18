@@ -76,33 +76,24 @@ class Map
 
     public : Cell* GetNeighbours(int pos)
     {
-        static Cell neighbours[9];
+        static Cell neighbours[8];
         int count = 0;
 
         if (pos % _size != 0) // if not on left column
         {
             if (pos >= _size) // if not on top row
             {
-                if (_grid[pos - (_size + 1)]._type == 'M') // top left
-                {
-                    count++;
-                    neighbours[count] = _grid[pos - (_size + 1)];
-                }
+                neighbours[count] = _grid[pos - (_size + 1)]; // top left
+                count++;
             }
 
-            if (_grid[pos - 1]._type == 'M') // centre left
-            {
-                count++;
-                neighbours[count] = _grid[pos - 1];
-            }
+            neighbours[count] = _grid[pos - 1]; // centre left
+            count++;
 
             if (pos < (_size * (_size - 1))) // if not on bottom row
             {
-                if (_grid[pos + (_size - 1)]._type == 'M') // bottom left
-                {
-                    count++;
-                    neighbours[count] = _grid[pos + (_size - 1)];
-                }
+                neighbours[count] = _grid[pos + (_size - 1)]; // bottom left
+                count++;
             }
         }
 
@@ -110,48 +101,33 @@ class Map
         {
             if (pos >= _size) // if not on top row
             {
-                if (_grid[pos - (_size - 1)]._type == 'M') // top right
-                {
-                    count++;
-                    neighbours[count] = _grid[pos - (_size - 1)];
-                }
+                neighbours[count] = _grid[pos - (_size - 1)]; // top right
+                count++;
             }
 
-            if (_grid[pos + 1]._type == 'M') // centre right
-            {
-                count++;
-                neighbours[count] = _grid[pos + 1];
-            }
+            neighbours[count] = _grid[pos + 1]; // centre right
+            count++;
 
             if (pos < (_size * (_size - 1))) // if not on bottom row
             {
-                if (_grid[pos + (_size + 1)]._type == 'M') //bottom right
-                {
-                    count++;
-                    neighbours[count] = _grid[pos + (_size + 1)];
-                }
+                neighbours[count] = _grid[pos + (_size + 1)]; // bottom right
+                count++;
             }
         }
 
         if (pos >= _size) // if not on top row
         {
-            if (_grid[pos - _size]._type == 'M') // top centre
-            {
-                count++;
-                neighbours[count] = _grid[pos - _size];
-            }
+            neighbours[count] = _grid[pos - _size]; // top centre
+            count++;
         }
 
         if (pos < (_size * (_size - 1))) // if not on bottom row
         {
-            if (_grid[pos + _size]._type == 'M') // bottom centre
-            {
-                count++;
-                neighbours[count] = _grid[pos + _size];
-            }
+            neighbours[count] = _grid[pos + _size]; // bottom centre
+            count++;
         }
 
-        return neighbours[];
+        return neighbours;
     }
 
     public : void PlaceMines()
@@ -159,12 +135,30 @@ class Map
         for (int i = 0; i < _mineCount; i++)
         {
             int randCell;
+            bool valid = true;
 
             do
             {
                 randCell = RNG(0, _size * _size);
+
+                if (_grid[randCell]._type == 'M' || randCell == _pos)
+                {
+                    valid = false;
+                }
+
+                else
+                {
+                    for (int j = 0; j < 8; j++)
+                    {
+                        if (randCell == GetNeighbours(_pos)[j])
+                        {
+                            valid = false;
+                        }
+                    }
+                }
             }
-            while (_grid[randCell]._type != 'M' && randCell != _pos && randCell != _pos - 1 && randCell != _pos + 1 && randCell != _pos - _size && randCell != _pos - _size - 1 && randCell != _pos - _size + 1 && randCell != _pos + _size && randCell != _pos + _size - 1 && randCell != _pos + _size + 1);
+            while (!valid)
+            // while (_grid[randCell]._type == 'M' || randCell == _pos || randCell == _pos - 1 || randCell == _pos + 1 || randCell == _pos - _size || randCell == _pos - _size - 1 || randCell == _pos - _size + 1 || randCell == _pos + _size || randCell == _pos + _size - 1 || randCell == _pos + _size + 1);
 
             _grid[randCell]._type = 'M';
         }
@@ -174,80 +168,80 @@ class Map
     {
         for (int i = 0; i < _size * _size; i++)
         {
-            // int count = 0;
+            for (int j = 0; j < 8; j++)
+            {
+                if (GetNeighbours(i)[j]._type == 'M')
+                {
+                    _grid[i]._mineCount++;
+                }
+            }
 
             // if (_grid[i]._type != 'M')
             // {
-                if (i % _size != 0) // if not on left column
-                {
-                    if (i >= _size) // if not on top row
-                    {
-                        if (_grid[i - (_size + 1)]._type == 'M') // top left
-                        {
-                            _grid[i]._mineCount++;
-                        }
-                    }
+            //     if (i % _size != 0) // if not on left column
+            //     {
+            //         if (i >= _size) // if not on top row
+            //         {
+            //             if (_grid[i - (_size + 1)]._type == 'M') // top left
+            //             {
+            //                 _grid[i]._mineCount++;
+            //             }
+            //         }
 
-                    if (_grid[i - 1]._type == 'M') // centre left
-                    {
-                        _grid[i]._mineCount++;
-                    }
+            //         if (_grid[i - 1]._type == 'M') // centre left
+            //         {
+            //             _grid[i]._mineCount++;
+            //         }
 
-                    if (i < (_size * (_size - 1))) // if not on bottom row
-                    {
-                        if (_grid[i + (_size - 1)]._type == 'M') // bottom left
-                        {
-                            _grid[i]._mineCount++;
-                        }
-                    }
-                }
+            //         if (i < (_size * (_size - 1))) // if not on bottom row
+            //         {
+            //             if (_grid[i + (_size - 1)]._type == 'M') // bottom left
+            //             {
+            //                 _grid[i]._mineCount++;
+            //             }
+            //         }
+            //     }
 
-                if ((i + 1) % _size != 0) // if not on right column
-                {
-                    if (i >= _size) // if not on top row
-                    {
-                        if (_grid[i - (_size - 1)]._type == 'M') // top right
-                        {
-                            _grid[i]._mineCount++;
-                        }
-                    }
+            //     if ((i + 1) % _size != 0) // if not on right column
+            //     {
+            //         if (i >= _size) // if not on top row
+            //         {
+            //             if (_grid[i - (_size - 1)]._type == 'M') // top right
+            //             {
+            //                 _grid[i]._mineCount++;
+            //             }
+            //         }
 
-                    if (_grid[i + 1]._type == 'M') // centre right
-                    {
-                        _grid[i]._mineCount++;
-                    }
+            //         if (_grid[i + 1]._type == 'M') // centre right
+            //         {
+            //             _grid[i]._mineCount++;
+            //         }
 
-                    if (i < (_size * (_size - 1))) // if not on bottom row
-                    {
-                        if (_grid[i + (_size + 1)]._type == 'M') //bottom right
-                        {
-                            _grid[i]._mineCount++;
-                        }
-                    }
-                }
+            //         if (i < (_size * (_size - 1))) // if not on bottom row
+            //         {
+            //             if (_grid[i + (_size + 1)]._type == 'M') //bottom right
+            //             {
+            //                 _grid[i]._mineCount++;
+            //             }
+            //         }
+            //     }
 
-                if (i >= _size) // if not on top row
-                {
-                    if (_grid[i - _size]._type == 'M') // top centre
-                    {
-                        _grid[i]._mineCount++;
-                    }
-                }
+            //     if (i >= _size) // if not on top row
+            //     {
+            //         if (_grid[i - _size]._type == 'M') // top centre
+            //         {
+            //             _grid[i]._mineCount++;
+            //         }
+            //     }
 
-                if (i < (_size * (_size - 1))) // if not on bottom row
-                {
-                    if (_grid[i + _size]._type == 'M') // bottom centre
-                    {
-                        _grid[i]._mineCount++;
-                    }
-                }
-            // }
-
-            // if (count > 0)
-            // {
-            //     _grid[i]._type = (char)(count + 48);
-            //     // _grid[i]._type = 'N';
-            // }
+            //     if (i < (_size * (_size - 1))) // if not on bottom row
+            //     {
+            //         if (_grid[i + _size]._type == 'M') // bottom centre
+            //         {
+            //             _grid[i]._mineCount++;
+            //         }
+            //     }
+            }
         }
     }
 
@@ -333,6 +327,11 @@ class Map
                 printf("@ ");
             }
 
+            else if (_grid[i]._mineCount > 0)
+            {
+                printf("%d ", _grid[i]._mineCount);
+            }
+
             else
             {
                 printf("%c ", _grid[i]._symbol);
@@ -412,6 +411,13 @@ int main()
         char i = GetInput(); 
 
         m.Update(i);
+
+        // for (int i = 0; i < 8; i++)
+        // {
+        //     printf("%d ", m.GetNeighbours(m._pos)[i]._mineCount);
+        // }
+
+        // printf("\n\n");
     }
 
     while (true) 
