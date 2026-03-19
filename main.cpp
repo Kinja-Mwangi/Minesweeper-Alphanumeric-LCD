@@ -2,7 +2,10 @@
 #include <cstdlib>
 #include <time.h>
 #include <ctype.h> 
-// #include "TextLCD.h"
+#include "TextLCD.h"
+
+int prevPos = 0;
+TextLCD lcd(D0, D1, D2, D3, D4, D5, TextLCD::LCD20x4); // Connect these nucleo pins to RS, E, D4, D5, D6 and D7 pins of the LCD
 
 int RNG(int lB, int uB) // lB inclusive, uB exclusive
 {
@@ -20,7 +23,7 @@ class Map
         public : Cell()
         {
             _type = 'E';
-            _symbol = 'o';
+            _symbol = '+';
         }
 
         public : Cell(char type, char symbol, int pos)
@@ -49,7 +52,7 @@ class Map
 
         public : void UnFlag()
         {
-            _symbol = 'o'; // because you can only flag unopened cells
+            _symbol = '+'; // because you can only flag unopened cells
         }
     };
 
@@ -70,7 +73,7 @@ class Map
     // {
     //     for (int i = 0; i < _size * _size; i++)
     //     {
-    //         _grid[i] = Cell('E', 'o');
+    //         _grid[i] = Cell('E', '+');
     //     }
     // }
 
@@ -275,7 +278,7 @@ class Map
             Cell& cell = _grid[pos]; // taking this cell by reference so any changes to cell in the method are applied to the actual cell
 
             // skip if already revealed or flagged
-            if (cell._symbol != 'o' || cell._symbol == 'F' || cell._type == 'M')
+            if (cell._symbol != '+' || cell._symbol == 'F' || cell._type == 'M')
             {
                 continue;
             }
@@ -295,7 +298,7 @@ class Map
                 int neighbour = GetNeighbours(pos)[i];
                 // pos = GetNeighbours(pos)[i];
 
-                if (_grid[neighbour]._symbol == 'o' && _grid[neighbour]._type == 'E' && neighbour < _size * _size /*dodgey workaround*/)
+                if (_grid[neighbour]._symbol == '+' && _grid[neighbour]._type == 'E' && neighbour < _size * _size /*dodgey workaround*/)
                 {
                     queue[tail++] = neighbour;
                 }
@@ -361,7 +364,7 @@ class Map
                 _gameSet = true;
             }
 
-            if (_grid[_pos]._symbol == 'o')
+            if (_grid[_pos]._symbol == '+')
             {   
                 if (_grid[_pos]._mineCount == 0)
                 {
@@ -378,7 +381,7 @@ class Map
 
         else if (input == 'B')
         {
-            if (_grid[_pos]._symbol == 'o')
+            if (_grid[_pos]._symbol == '+')
             {
                 _grid[_pos].Flag();
             }
@@ -404,37 +407,187 @@ class Map
     //     }
     // }
 
-
-    public : void DisplayMap()
+    // Display on LCD Display
+    public : void Display()
     {
-        for (int i = 0; i < _size * _size; i++)
+        char cursor = 35;
+        lcd.locate(0,0);
+
+        if (_pos < _size * 4)
         {
-            if (i == _pos)
-            {
-                printf("@ ");
-            }
-
-            else if (_grid[i]._type == 'M')
-            {
-                printf("X ");
-            }
-
-            // else if (_grid[i]._mineCount > 0)
+            // if (prevPos >= _size * 4)
             // {
-            //     printf("%d ", _grid[i]._mineCount);
+            //     lcd.cls();
+            // }
+            
+            for (int i = 0; i < _size * 4; i++)
+            {
+                if (i == _pos)
+                {
+                    lcd.printf("%c ", cursor);
+                }
+
+                if (_grid[i]._symbol == '+')
+                {
+                    lcd.printf("%c ", 219);
+                }
+
+                // if (_grid[i]._symbol == '+')
+                // {
+                //     lcd.printf("%c ", 256);
+                // }
+                
+                // else if (_grid[i]._type == 'M')
+                // {
+                //     lcd.printf("X ");
+                // }
+
+                // else if (_grid[i]._mineCount > 0)
+                // {
+                //     printf("%d ", _grid[i]._mineCount);
+                // }
+
+                else
+                {
+                    lcd.printf("%c ", _grid[i]._symbol);
+                }
+
+                if ((i + 1) % _size == 0 && i > 0)
+                {
+                    // lcd.printf("\n");
+                    lcd.locate(0, (i + 1) / _size);
+                }
+            }  
+        }
+
+        else if (_pos >= _size * 4 && _pos < _size * 8)
+        {
+            // if (prevPos < _size * 4 || prevPos >= _size * 8)
+            // {
+            //     lcd.cls();
             // }
 
-            else
+            for (int i = _size * 4; i < _size * 8; i++)
             {
-                printf("%c ", _grid[i]._symbol);
-            }
-            
-            if ((i + 1) % _size == 0 && i > 0)
+                if (i == _pos)
+                {
+                    lcd.printf("%c ", cursor);
+                }
+
+                if (_grid[i]._symbol == '+')
+                {
+                    lcd.printf("%c ", 219);
+                }
+
+                // if (_grid[i]._symbol == '+')
+                // {
+                //     lcd.printf("%c ", 256);
+                // }
+
+                // else if (_grid[i]._type == 'M')
+                // {
+                //     lcd.printf("X ");
+                // }
+
+                // else if (_grid[i]._mineCount > 0)
+                // {
+                //     printf("%d ", _grid[i]._mineCount);
+                // }
+
+                else
+                {
+                    lcd.printf("%c ", _grid[i]._symbol);
+                }
+
+                if ((i + 1) % _size == 0 && i > 0)
+                {
+                    // lcd.printf("\n");
+                    lcd.locate(0, (i + 1) / (_size * 4));
+                }
+            }  
+        }
+
+        else if (_pos >= _size * 8) // temporary solution for scrolling that only supports up to 10x10 maps
+        {
+            // if (prevPos < _size * 8)
+            // {
+            //     lcd.cls();
+            // }
+
+            for (int i = _size * 8; i < _size * _size; i++)
             {
-                printf("\n");
-            }
-        }   
+                if (i == _pos)
+                {
+                    lcd.printf("%c ", cursor);
+                }
+
+                if (_grid[i]._symbol == '+')
+                {
+                    lcd.printf("%c ", 219);
+                }
+
+                // if (_grid[i]._symbol == '+')
+                // {
+                //     lcd.printf("%c ", 256);
+                // }
+
+                // else if (_grid[i]._type == 'M')
+                // {
+                //     lcd.printf("X ");
+                // }
+
+                // else if (_grid[i]._mineCount > 0)
+                // {
+                //     printf("%d ", _grid[i]._mineCount);
+                // }
+
+                else
+                {
+                    lcd.printf("%c ", _grid[i]._symbol);
+                }
+
+                if ((i + 1) % _size == 0 && i > 0)
+                {
+                    // lcd.printf("\n");
+                    lcd.locate(0, (i + 1) / (_size * 8));
+                }
+            } 
+        }
+
+        prevPos = _pos;
     }
+
+    // Display on serial port terminal (Coolterm)
+    // public : void Display()
+    // {
+    //     for (int i = 0; i < _size * _size; i++)
+    //     {
+    //         if (i == _pos)
+    //         {
+    //             printf("@ ");
+    //         }
+
+    //         else if (_grid[i]._type == 'M')
+    //         {
+    //             printf("X ");
+    //         }
+
+    //         // else if (_grid[i]._mineCount > 0)
+    //         // {
+    //         //     printf("%d ", _grid[i]._mineCount);
+    //         // }
+
+    //         else
+    //         {
+    //             printf("%c ", _grid[i]._symbol);
+    //         }
+            
+    //         if ((i + 1) % _size == 0 && i > 0)
+    //         {
+    //             printf("\n");
+    //         }
+    //     }   
+    // }
 };
 
 char GetInput()
@@ -498,13 +651,13 @@ int main()
 
     // srand(HAL_GetTick());
 
-    Map m(18, 39, 40);
+    Map m(10, 20, 30);
     
-    printf("Welcome To Minesweeper!\n\n");
+    // printf("Welcome To Minesweeper!\n\n");
 
     while (true)
     {
-        m.DisplayMap();
+        m.Display();
         printf("\n\n");
 
         char i = GetInput(); 
