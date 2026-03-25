@@ -52,7 +52,7 @@ class Map
 
         public : void UnFlag()
         {
-            _symbol = '+'; // because you can only flag unopened cells
+            _symbol = '+';
         }
     };
 
@@ -134,7 +134,7 @@ class Map
         for (int i = count; i < 8; i++)
         {
             // neighbours[i] = _pos;
-            neighbours[i] = (_size * _size) + 1; // dodgey fix - fills the remaining neighbour cells with positions beyond the bounds of the grid which therefore technically don't exist (should hopefully work for my purposes)
+            neighbours[i] = (_size * _size) + 1; // Dodgey fix - fills the remaining neighbour cells with positions beyond the bounds of the grid which therefore technically don't exist (should work for now)
         }
 
         return neighbours;
@@ -152,8 +152,6 @@ class Map
                 valid = true;
                 randCell = RNG(0, _size * _size);
 
-                // printf("%d\n\n", randCell);
-
                 if (_grid[randCell]._type == 'M' || randCell == _pos)
                 {
                     valid = false;
@@ -163,11 +161,6 @@ class Map
                 {
                     for (int j = 0; j < 8; j++)
                     {
-                        // if (randCell == GetNeighbours(_pos)[j]) // TO DO : Fix this (may have to change GetNeighbours() to return an int array of cell positions)
-                        // {
-                        //     valid = false;
-                        // }
-
                         if (randCell == _pos || randCell == _pos - 1 || randCell == _pos + 1 || randCell == _pos - _size || randCell == _pos - _size - 1 || randCell == _pos - _size + 1 || randCell == _pos + _size || randCell == _pos + _size - 1 || randCell == _pos + _size + 1)
                         {
                             valid = false;
@@ -186,6 +179,7 @@ class Map
     {
         for (int i = 0; i < _size * _size; i++)
         {
+            // Place numbers using GetNeighbours
             for (int j = 0; j < 8; j++) // TO DO : Fix this so GetNeighbours can be used
             {
                 if (_grid[GetNeighbours(i)[j]]._type == 'M')
@@ -194,6 +188,7 @@ class Map
                 }
             }
 
+            // Place numbers heuristically
             // if (_grid[i]._type != 'M')
             // {
             //     if (i % _size != 0) // if not on left column
@@ -265,19 +260,19 @@ class Map
 
     void FloodFill(int start)
     {
-        int queue[_size * _size]; // max possible
+        int queue[_size * _size];
         int head = 0;
         int tail = 0;
 
-        // add starting cell
+        // Add starting cell
         queue[tail++] = start;
 
         while (head < tail)
         {
             int pos = queue[head++];
-            Cell& cell = _grid[pos]; // taking this cell by reference so any changes to cell in the method are applied to the actual cell
+            Cell& cell = _grid[pos]; // This cell is addressed by reference so any changes to cell in the method are applied to the actual cell
 
-            // skip if already revealed or flagged
+            // Skip if already revealed or flagged
             if (cell._symbol != '+' || cell._symbol == 'F' || cell._type == 'M')
             {
                 continue;
@@ -285,46 +280,22 @@ class Map
 
             cell.Open();
 
-            // only expand if it's a 0
+            // Only expand if minecount = 0
             if (cell._mineCount != 0)
             {
                 continue;
             }
 
-            // check neighbours
-
+            // Check neighbours
             for (int i = 0; i < 8; i++)
             {
                 int neighbour = GetNeighbours(pos)[i];
-                // pos = GetNeighbours(pos)[i];
 
                 if (_grid[neighbour]._symbol == '+' && _grid[neighbour]._type == 'E' && neighbour < _size * _size /*dodgey workaround*/)
                 {
                     queue[tail++] = neighbour;
                 }
             }
-
-            // for (int dy = -1; dy <= 1; dy++)
-            // {
-            //     for (int dx = -1; dx <= 1; dx++)
-            //     {
-            //         if (dx == 0 && dy == 0) continue;
-
-            //         int nx = p.x + dx;
-            //         int ny = p.y + dy;
-
-            //         // bounds check
-            //         if (nx >= 0 && nx < _size && ny >= 0 && ny < _size)
-            //         {
-            //             Cell& neighbour = getCell(nx, ny);
-
-            //             if (!neighbour._revealed && !neighbour._flagged)
-            //             {
-            //                 queue[tail++] = {nx, ny};
-            //             }
-            //         }
-            //     }
-            // }
         }
     }
 
@@ -333,25 +304,21 @@ class Map
         if (_pos >= _size && input == 'U') // if not on top row
         {
             _pos -= _size;
-            // Cursor(_size, _grid[_pos + _size]._symbol);
         }
 
         else if (_pos < _size * (_size - 1) && input == 'D') // if not on bottom row
         {
             _pos += _size;
-            // Cursor(-_size, _grid[_pos - _size]._symbol);
         }
 
         else if (_pos % _size != 0 && input == 'L') // if not on left column
         {
             _pos--;
-            // Cursor(1, _grid[_pos + 1]._symbol);
         }
 
         else if ((_pos + 1) % _size != 0 && input == 'R') // if not on right column
         {
             _pos++;
-            // Cursor(-1, _grid[_pos - 1]._symbol);
         }
 
         else if (input == 'A')
@@ -375,7 +342,6 @@ class Map
                 {
                     _grid[_pos].Open();
                 }
-                // TO DO : Add flood fill
             }
         }
 
@@ -398,28 +364,14 @@ class Map
 
     }
 
-    // void Cursor(int move, char pSymbol)
-    // {
-    //     if (_pos != 0)
-    //     {
-    //         _grid[_pos + move]._symbol = pSymbol;
-    //         _grid[_pos]._symbol = '@';
-    //     }
-    // }
-
     // Display on LCD Display
     public : void Display()
     {
-        char cursor = 35;
+        char cursor = '#';
         lcd.locate(0,0);
 
         if (_pos < _size * 4)
         {
-            // if (prevPos >= _size * 4)
-            // {
-            //     lcd.cls();
-            // }
-            
             for (int i = 0; i < _size * 4; i++)
             {
                 if (i == _pos)
@@ -427,25 +379,10 @@ class Map
                     lcd.printf("%c ", cursor);
                 }
 
-                if (_grid[i]._symbol == '+')
+                else if (_grid[i]._symbol == '+')
                 {
                     lcd.printf("%c ", 219);
                 }
-
-                // if (_grid[i]._symbol == '+')
-                // {
-                //     lcd.printf("%c ", 256);
-                // }
-                
-                // else if (_grid[i]._type == 'M')
-                // {
-                //     lcd.printf("X ");
-                // }
-
-                // else if (_grid[i]._mineCount > 0)
-                // {
-                //     printf("%d ", _grid[i]._mineCount);
-                // }
 
                 else
                 {
@@ -454,45 +391,24 @@ class Map
 
                 if ((i + 1) % _size == 0 && i > 0)
                 {
-                    // lcd.printf("\n");
                     lcd.locate(0, (i + 1) / _size);
                 }
-            }  
-        }
+            }
+        }  
 
-        else if (_pos >= _size * 4 && _pos < _size * 8)
+        else if (_pos >= _size * 4)
         {
-            // if (prevPos < _size * 4 || prevPos >= _size * 8)
-            // {
-            //     lcd.cls();
-            // }
-
-            for (int i = _size * 4; i < _size * 8; i++)
+            for (int i = (_pos - (_pos % _size)) - (_size * 3); i + 1 < _pos + (_size - (_pos % _size)); i++)
             {
                 if (i == _pos)
                 {
                     lcd.printf("%c ", cursor);
                 }
 
-                if (_grid[i]._symbol == '+')
+                else if (_grid[i]._symbol == '+')
                 {
                     lcd.printf("%c ", 219);
                 }
-
-                // if (_grid[i]._symbol == '+')
-                // {
-                //     lcd.printf("%c ", 256);
-                // }
-
-                // else if (_grid[i]._type == 'M')
-                // {
-                //     lcd.printf("X ");
-                // }
-
-                // else if (_grid[i]._mineCount > 0)
-                // {
-                //     printf("%d ", _grid[i]._mineCount);
-                // }
 
                 else
                 {
@@ -501,93 +417,47 @@ class Map
 
                 if ((i + 1) % _size == 0 && i > 0)
                 {
-                    // lcd.printf("\n");
-                    lcd.locate(0, (i + 1) / (_size * 4));
+                    lcd.locate(0, (i + 1) / _size);
                 }
-            }  
-        }
-
-        else if (_pos >= _size * 8) // temporary solution for scrolling that only supports up to 10x10 maps
-        {
-            // if (prevPos < _size * 8)
-            // {
-            //     lcd.cls();
-            // }
-
-            for (int i = _size * 8; i < _size * _size; i++)
-            {
-                if (i == _pos)
-                {
-                    lcd.printf("%c ", cursor);
-                }
-
-                if (_grid[i]._symbol == '+')
-                {
-                    lcd.printf("%c ", 219);
-                }
-
-                // if (_grid[i]._symbol == '+')
-                // {
-                //     lcd.printf("%c ", 256);
-                // }
-
-                // else if (_grid[i]._type == 'M')
-                // {
-                //     lcd.printf("X ");
-                // }
-
-                // else if (_grid[i]._mineCount > 0)
-                // {
-                //     printf("%d ", _grid[i]._mineCount);
-                // }
-
-                else
-                {
-                    lcd.printf("%c ", _grid[i]._symbol);
-                }
-
-                if ((i + 1) % _size == 0 && i > 0)
-                {
-                    // lcd.printf("\n");
-                    lcd.locate(0, (i + 1) / (_size * 8));
-                }
-            } 
+            }
         }
 
         prevPos = _pos;
     }
 
-    // Display on serial port terminal (Coolterm)
-    // public : void Display()
-    // {
-    //     for (int i = 0; i < _size * _size; i++)
-    //     {
-    //         if (i == _pos)
-    //         {
-    //             printf("@ ");
-    //         }
+    // Display on serial port terminal
+    public : void Print()
+    {
+        for (int i = 0; i < _size * _size; i++)
+        {
+            if (i == _pos)
+            {
+                printf("@ ");
+            }
 
-    //         else if (_grid[i]._type == 'M')
-    //         {
-    //             printf("X ");
-    //         }
+            else if (_grid[i]._type == 'M')
+            {
+                printf("X ");
+            }
 
-    //         // else if (_grid[i]._mineCount > 0)
-    //         // {
-    //         //     printf("%d ", _grid[i]._mineCount);
-    //         // }
+            // else if (_grid[i]._mineCount > 0)
+            // {
+            //     printf("%d ", _grid[i]._mineCount);
+            // }
 
-    //         else
-    //         {
-    //             printf("%c ", _grid[i]._symbol);
-    //         }
+            else
+            {
+                printf("%c ", _grid[i]._symbol);
+            }
             
-    //         if ((i + 1) % _size == 0 && i > 0)
-    //         {
-    //             printf("\n");
-    //         }
-    //     }   
-    // }
+            if ((i + 1) % _size == 0 && i > 0)
+            {
+                printf("\n");
+            }
+        }   
+
+        printf("\n\n");
+    }
 };
 
 char GetInput()
@@ -639,37 +509,19 @@ char GetInput()
     return input;
 }
 
-// main() runs in its own thread in the OS
 int main()
 {
-    // DigitalIn B(BUTTON1);
-
-    // while (B)
-    // {
-
-    // }
-
-    // srand(HAL_GetTick());
-
-    Map m(10, 20, 30);
+    Map m(10, 10, 18); // if _maxMines is less than 18, the game crashes after pressing A
     
     // printf("Welcome To Minesweeper!\n\n");
 
     while (true)
     {
         m.Display();
-        printf("\n\n");
 
         char i = GetInput(); 
 
         m.Update(i);
-
-        // for (int i = 0; i < 8; i++)
-        // {
-        //     printf("%d ", m.GetNeighbours(m._pos)[i]);
-        // }
-
-        // printf("\n\n");
     }
 
     while (true) 
