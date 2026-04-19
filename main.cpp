@@ -1,7 +1,7 @@
 #include "mbed.h"
 #include <cstdlib>
 #include <time.h>
-#include <ctype.h> 
+#include <ctype.h>
 #include "TextLCD.h"
 
 TextLCD lcd(D0, D1, D2, D3, D4, D5, TextLCD::LCD20x4); // Connect these nucleo pins to RS, E, D4, D5, D6 and D7 pins of the LCD
@@ -9,7 +9,7 @@ TextLCD lcd(D0, D1, D2, D3, D4, D5, TextLCD::LCD20x4); // Connect these nucleo p
 int RNG(int lB, int uB) // lB inclusive, uB exclusive
 {
     int r = uB - lB;
-    return (rand() % r) + lB; 
+    return (rand() % r) + lB;
 }
 
 class Map
@@ -59,7 +59,9 @@ class Map
     public : int _size;
     int _mineCount;
     Cell* _grid;
+    Cell* _prevGrid;
     public : int _pos = 0;
+    int _prevPos = 0;
     bool _gameInitialized = false;
     public : int _start = 0;
     public : int _end;
@@ -69,7 +71,8 @@ class Map
         _size = size;
         _mineCount = RNG(minMines, maxMines + 1);
         _grid = new Cell[_size * _size];
-        _end = _size * 4;
+        _prevGrid = new Cell[_size * _size];
+        _end = (_size * 4) - 1;
     }
 
     public : int* GetNeighbours(int pos)
@@ -128,7 +131,6 @@ class Map
 
         for (int i = count; i < 8; i++)
         {
-            // neighbours[i] = _pos;
             neighbours[i] = -1; // Dodgey fix - fills the remaining neighbour cells with positions beyond the bounds of the grid which therefore technically don't exist (should work for now)
         }
 
@@ -159,7 +161,7 @@ class Map
                     // {
                     //     valid = false;
                     // }
-                
+
                     for (int j = 0; j < 8; j++)
                     {
                         if (randCell == GetNeighbours(_pos)[j])
@@ -285,7 +287,7 @@ class Map
     public : void Update()
     {
         char input = GetInput();
-        
+
         if (_pos >= _size && input == 'U') // if not on top row
         {
             _pos -= _size;
@@ -306,6 +308,18 @@ class Map
             _pos++;
         }
 
+        if (_pos < _start)
+        {
+            _start -= _size;
+            _end -= _size;
+        }
+
+        else if (_pos > _end)
+        {
+            _start += _size;
+            _end += _size;
+        }
+
         else if (input == 'A')
         {
             if (!_gameInitialized)
@@ -317,7 +331,7 @@ class Map
             }
 
             if (_grid[_pos]._symbol == '+')
-            {   
+            {
                 if (_grid[_pos]._mineCount == 0)
                 {
                     FloodFill(_pos);
@@ -336,7 +350,7 @@ class Map
             {
                 _grid[_pos].Flag();
             }
-            
+
             else if (_grid[_pos]._symbol == 'F')
             {
                 _grid[_pos].UnFlag();
@@ -344,33 +358,13 @@ class Map
         }
     }
 
-    // Display on LCD Display
+    // Display on LCD
     public : void Display()
     {
         char cursor = '#';
         lcd.locate(0,0);
 
-        if (_pos < _start)
-        {
-            if (_start >= 0)
-            {
-                _start -= _size;
-            }
-            
-            _end -= _size;
-        }
-
-        else if (_pos > _end)
-        {
-            _start += _size;
-
-            if (_end <= _size * _size)
-            {
-                _end += _size;
-            }
-        }
-
-        for (int i = _start; i < _end; i++)
+        for (int i = _start; i <= _end; i++)
         {
             if (i == _pos)
             {
@@ -387,18 +381,30 @@ class Map
                 lcd.printf("%c ", _grid[i]._symbol);
             }
 
-            if ((i + 1) % _size == 0 && i > 0)
+            if ((i + 1) % _size == 0)
             {
-                lcd.locate(0, (i + 1) / _size);
+                // lcd.printf("%d", ((i + 1) / _size) - 1); // prints the row number (for debugging purposes)
+                lcd.locate(0, (i + 1 - _start) / _size); // locates the next line (from 1 to 3) on the LCD display when a full row of the grid has been printed
             }
-        }
+        }            
     }
 
     // Display on serial port terminal (Coolterm)
     public : void Print()
     {
-        for (int i = 0; i < _size * _size; i++)
+        // for (int i = 0; i < _size * _size; i++)
+        for (int i = _start; i <= _end; i++)
         {
+            if (i % _size == 0)
+            {
+                if (i > 0)
+                {
+                    printf("\n");
+                }
+
+                printf("%d. ", i / _size);  // prints the row number (for debugging purposes)
+            }
+
             if (i == _pos)
             {
                 printf("@ ");
@@ -418,13 +424,9 @@ class Map
             {
                 printf("%c ", _grid[i]._symbol);
             }
-            
-            if ((i + 1) % _size == 0 && i > 0)
-            {
-                printf("\n");
-            }
-        }   
+        }
 
+        printf("\n\nStart: %d\nEnd: %d\nPos: %d\n", _start, _end, _pos);
         printf("\n\n");
     }
 };
@@ -432,19 +434,13 @@ class Map
 int main()
 {
     Map m(10, 10, 18);
-    // Display d(20, 4);
-    
+
     printf("Welcome To Minesweeper!\n\n");
 
     while (true)
     {
-        // d.Update();
+        m.Display();
         m.Print();
         m.Update();
     }
-
-    // while (true) 
-    // {
-    //     sleep();
-    // }
 }
