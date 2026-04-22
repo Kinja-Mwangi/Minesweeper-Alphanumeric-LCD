@@ -12,6 +12,32 @@ int RNG(int lB, int uB) // lB inclusive, uB exclusive
     return (rand() % r) + lB;
 }
 
+bool Contains(int* array, int size, int item)
+{
+    for (int i = 0; i < size; i++)
+    {
+        if (array[i] == item)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool Contains(char* array, int size, char item)
+{
+    for (int i = 0; i < size; i++)
+    {
+        if (array[i] == item)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 class Map
 {
     private : class Cell
@@ -57,11 +83,9 @@ class Map
     };
 
     public : int _size;
-    int _mineCount;
+    int _totalMines;
     Cell* _grid;
-    Cell* _prevGrid;
     public : int _pos = 0;
-    int _prevPos = 0;
     bool _gameInitialized = false;
     public : int _start = 0;
     public : int _end;
@@ -69,9 +93,11 @@ class Map
     public : Map(int size, int minMines, int maxMines)
     {
         _size = size;
-        _mineCount = RNG(minMines, maxMines + 1);
+        scanf("%d", &_totalMines);
+        _totalMines = _totalMines % (_size * _size);
+        // _totalMines = RNG(minMines, maxMines + 1);
+        printf("\nTotal Mines: %d\n", _totalMines);
         _grid = new Cell[_size * _size];
-        _prevGrid = new Cell[_size * _size];
         _end = (_size * 4) - 1;
     }
 
@@ -139,7 +165,7 @@ class Map
 
     public : void PlaceMines()
     {
-        for (int i = 0; i < _mineCount; i++)
+        for (int i = 0; i < _totalMines; i++)
         {
             int randCell;
             bool valid;
@@ -157,11 +183,6 @@ class Map
 
                 else
                 {
-                    // if (randCell == _pos || randCell == _pos - 1 || randCell == _pos + 1 || randCell == _pos - _size || randCell == _pos - _size - 1 || randCell == _pos - _size + 1 || randCell == _pos + _size || randCell == _pos + _size - 1 || randCell == _pos + _size + 1)
-                    // {
-                    //     valid = false;
-                    // }
-
                     for (int j = 0; j < 8; j++)
                     {
                         if (randCell == GetNeighbours(_pos)[j])
@@ -204,18 +225,11 @@ class Map
         while (head < tail)
         {
             int pos = queue[head++];
-            Cell& cell = _grid[pos]; // This cell is addressed by reference so any changes to cell in the method are applied to the actual cell
 
-            // Skip if already revealed or flagged
-            if (cell._symbol != '+' || cell._symbol == 'F' || cell._type == 'M')
-            {
-                continue;
-            }
-
-            cell.Open();
+            _grid[pos].Open();
 
             // Only expand if minecount = 0
-            if (cell._mineCount != 0)
+            if (_grid[pos]._mineCount != 0)
             {
                 continue;
             }
@@ -225,11 +239,9 @@ class Map
             // Check neighbours
             for (int i = 0; i < 8; i++)
             {
-                int neighbour = neighbours[i];
-
-                if (_grid[neighbour]._symbol == '+' && _grid[neighbour]._type == 'E' && neighbour >= 0 /*dodgey workaround*/)
+                if (_grid[neighbours[i]]._symbol == '+' && _grid[neighbours[i]]._type != 'M' && !Contains(queue, tail, neighbours[i]) && neighbours[i] >= 0 /*dodgey workaround*/)
                 {
-                    queue[tail++] = neighbour;
+                    queue[tail++] = neighbours[i];
                 }
             }
         }
@@ -279,8 +291,6 @@ class Map
             }
         }
 
-        // thread_sleep_for(100);
-
         return input;
     }
 
@@ -288,24 +298,72 @@ class Map
     {
         char input = GetInput();
 
-        if (_pos >= _size && input == 'U') // if not on top row
+        switch (input)
         {
-            _pos -= _size;
-        }
+            case 'U':
+                if (_pos >= _size) // if not on top row
+                {
+                    _pos -= _size;
+                }
+                break;
 
-        else if (_pos < _size * (_size - 1) && input == 'D') // if not on bottom row
-        {
-            _pos += _size;
-        }
+            case 'D':
+                if (_pos < _size * (_size - 1)) // if not on bottom row
+                {
+                    _pos += _size;
+                }
+                break;
 
-        else if (_pos % _size != 0 && input == 'L') // if not on left column
-        {
-            _pos--;
-        }
+            case 'L':
+                if (_pos % _size != 0) // if not on left column
+                {
+                    _pos--;
+                }
+                break;
 
-        else if ((_pos + 1) % _size != 0 && input == 'R') // if not on right column
-        {
-            _pos++;
+            case 'R':
+                if ((_pos + 1) % _size != 0) // if not on right column
+                {
+                    _pos++;
+                }
+                break;
+
+            case 'A':
+                if (!_gameInitialized)
+                {
+                    srand(HAL_GetTick()); // seed RNG
+                    PlaceMines();
+                    PlaceNumbers();
+                    _gameInitialized = true;
+                }
+
+                if (_grid[_pos]._symbol == '+')
+                {
+                    if (_grid[_pos]._mineCount == 0)
+                    {
+                        FloodFill(_pos);
+                    }
+
+                    else
+                    {
+                        _grid[_pos].Open();
+                    }
+
+                    // FloodFill(_pos);
+                }
+                break;
+
+            case 'B':
+                if (_grid[_pos]._symbol == '+')
+                {
+                    _grid[_pos].Flag();
+                }
+
+                else if (_grid[_pos]._symbol == 'F')
+                {
+                    _grid[_pos].UnFlag();
+                }
+                break;
         }
 
         if (_pos < _start)
@@ -318,43 +376,6 @@ class Map
         {
             _start += _size;
             _end += _size;
-        }
-
-        else if (input == 'A')
-        {
-            if (!_gameInitialized)
-            {
-                srand(HAL_GetTick()); // seed RNG
-                PlaceMines();
-                PlaceNumbers();
-                _gameInitialized = true;
-            }
-
-            if (_grid[_pos]._symbol == '+')
-            {
-                if (_grid[_pos]._mineCount == 0)
-                {
-                    FloodFill(_pos);
-                }
-
-                else
-                {
-                    _grid[_pos].Open();
-                }
-            }
-        }
-
-        else if (input == 'B')
-        {
-            if (_grid[_pos]._symbol == '+')
-            {
-                _grid[_pos].Flag();
-            }
-
-            else if (_grid[_pos]._symbol == 'F')
-            {
-                _grid[_pos].UnFlag();
-            }
         }
     }
 
@@ -383,7 +404,6 @@ class Map
 
             if ((i + 1) % _size == 0)
             {
-                // lcd.printf("%d", ((i + 1) / _size) - 1); // prints the row number (for debugging purposes)
                 lcd.locate(0, (i + 1 - _start) / _size); // locates the next line (from 1 to 3) on the LCD display when a full row of the grid has been printed
             }
         }            
@@ -392,8 +412,8 @@ class Map
     // Display on serial port terminal (Coolterm)
     public : void Print()
     {
-        // for (int i = 0; i < _size * _size; i++)
-        for (int i = _start; i <= _end; i++)
+        // for (int i = _start; i <= _end; i++)
+        for (int i = 0; i < _size * _size; i++)
         {
             if (i % _size == 0)
             {
@@ -402,7 +422,7 @@ class Map
                     printf("\n");
                 }
 
-                printf("%d. ", i / _size);  // prints the row number (for debugging purposes)
+                printf("%d. ", i / _size);
             }
 
             if (i == _pos)
@@ -426,16 +446,15 @@ class Map
             }
         }
 
-        printf("\n\nStart: %d\nEnd: %d\nPos: %d\n", _start, _end, _pos);
+        // printf("\n\nStart: %d\nEnd: %d\nPos: %d\n", _start, _end, _pos);
         printf("\n\n");
     }
 };
 
 int main()
 {
-    Map m(10, 10, 18);
-
     printf("Welcome To Minesweeper!\n\n");
+    Map m(10, 0, 10);
 
     while (true)
     {
