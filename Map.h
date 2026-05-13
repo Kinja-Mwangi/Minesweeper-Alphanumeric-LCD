@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Cell.h"
+#include "Point.h"
 
 #include <vector>
 
@@ -36,7 +37,7 @@ public:
 
 private:
     bool hasWon() const;
-    bool inInBounds(int x, int y) const;
+    bool isInBounds(Point position) const;
 
     void generateMines(Point position);
     void recursiveOpen(Point start);

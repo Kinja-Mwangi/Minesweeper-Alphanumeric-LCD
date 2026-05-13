@@ -1,17 +1,18 @@
 #include "Map.h"
 
 #include <algorithm>
+#include "Random.h"
 
 // To be used by the recursiveOpen function soon
-constexpr Point* deltas = {
-    Point{ -1, -1 }, // Top left
-    Point{  0, -1 }, // Top centre
-    Point{  1, -1 }, // Top right
-    Point{  1,  0 }, // Middle right
-    Point{  1,  1 }, // Bottom right
-    Point{  0,  1 }, // Bottom centre
-    Point{ -1,  1 }, // Bottom left
-    Point{ -1,  0 }, // Middle left
+auto deltas = std::array<8, Point>{
+    Point(-1, -1), // Top left
+    Point( 0, -1), // Top centre
+    Point( 1, -1), // Top right
+    Point( 1,  0), // Middle right
+    Point( 1,  1), // Bottom right
+    Point( 0,  1), // Bottom centre
+    Point(-1,  1), // Bottom left
+    Point(-1,  0), // Middle left
 };
 
 Map::Map(int columns, int rows, int mines)
@@ -30,24 +31,24 @@ Map::Map(int columns, int rows, int mines)
     reset(); // Good enough for now
 }
 
-void Map::getState() const
+GameState Map::getState() const
 {
     return m_State;
 }
 
-void Map::getCell(int x, int y) const
+Cell Map::getCell(int x, int y) const
 {
-    return m_Grid[x, y];
+    return m_Grid[x][y];
 }
 
-std::vector<Point> getAdjacentPoints(Point position) const
+std::vector<Point> Map::getAdjacentPoints(Point position) const
 {
     std::vector<Point> points(8);
 
     for (int i = 0; i <= 7; i++)
     {
         if (isInBounds(position + deltas[i]))
-            points.emplace_back(position + delta);
+            points.emplace_back(position + deltas[i]);
     }
 
     return points;
@@ -82,7 +83,7 @@ void Map::openSquare(Point position)
     }
     else if (gridSquare.mine)
     {
-        m_State == GameState::Lose;
+        m_State = GameState::Lose;
     }
 
     if (hasWon()) m_State = GameState::Win;
@@ -93,7 +94,7 @@ void Map::flagSquare(Point position)
     m_Grid[position.x][position.y].flagged = !m_Grid[position.x][position.y].flagged;
 }
 
-bool Map::hasWon() const;
+bool Map::hasWon() const
 {
     for (auto& column : m_Grid)
     {
@@ -107,13 +108,13 @@ bool Map::hasWon() const;
     return true;
 }
 
-bool Map::isInBounds(Point position) const;
+bool Map::isInBounds(Point position) const
 {
-    return position.x >= 0 && position.X < m_Columns &&
+    return position.x >= 0 && position.x < m_Columns &&
            position.y >= 0 && position.y < m_Rows;
 }
 
-void Map::generateMines(Point position);
+void Map::generateMines(Point position)
 {
     for (int i = 0; i < m_Mines; i++)
     {
@@ -123,11 +124,11 @@ void Map::generateMines(Point position);
 
         do
         {
-            column = m_Random.getRandom(m_Columns);
-            row = m_Random.getRandom(m_Rows);
+            column = randomRange(0, m_Columns);
+            row = randomRange(0, m_Rows);
             adjacent = getAdjacentPoints(position);
         } while (m_Grid[column][row].mine || (column == position.x && row == position.y) ||
-                 std::find(adjacent.begin(), adjacent.end(), Point(column, row)) != adjacent.end())
+                 std::find(adjacent.begin(), adjacent.end(), Point(column, row)) != adjacent.end());
         
         m_Grid[column][row].mine = true;
 
@@ -140,7 +141,7 @@ void Map::generateMines(Point position);
     m_State = GameState::Playing;
 }
 
-void Map::recursiveOpen(Point start);
+void Map::recursiveOpen(Point start)
 {
     for (auto& point : getAdjacentPoints(start))
     {
@@ -150,7 +151,7 @@ void Map::recursiveOpen(Point start);
 
         m_Grid[point.x][point.y].open = true;
 
-        if (square.Mine)
+        if (square.mine)
         {
             m_State = GameState::Lose;
             break;

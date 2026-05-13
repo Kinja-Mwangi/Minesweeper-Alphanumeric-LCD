@@ -2,8 +2,8 @@
 
 struct Point
 {
-    int x,
-    int y,
+    int x;
+    int y;
 
     Point(int xPos, int yPos);
 
