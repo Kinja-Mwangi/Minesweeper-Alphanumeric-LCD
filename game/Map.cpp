@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include "../utils/Random.h"
+#include "Cell.h"
 
 // To be used by the recursiveOpen function soon
 auto deltas = std::array<Point, 8>{
@@ -30,6 +31,16 @@ Map::Map(int columns, int rows, int mines)
     }
 
     reset(); // Good enough for now
+}
+
+int Map::getRows() const
+{
+    return m_Rows;
+}
+
+int Map::getColumns() const
+{
+    return m_Columns;
 }
 
 GameState Map::getState() const
@@ -73,7 +84,7 @@ void Map::openSquare(Point position)
     if (m_State == GameState::Playing)
         generateMines(position);
 
-    auto gridSquare = m_Grid[position.x][position.y];
+    Cell gridSquare = m_Grid[position.x][position.y];
     if (gridSquare.open || gridSquare.flagged) return;
 
     m_Grid[position.x][position.y].open = true;

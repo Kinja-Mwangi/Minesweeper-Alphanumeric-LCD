@@ -27,6 +27,9 @@ class Map
 public:
     Map(int columns, int rows, int mines);
 
+    int getRows() const;
+    int getColumns() const;
+
     GameState getState() const;
     Cell getCell(int x, int y) const;
     std::vector<Point> getAdjacentPoints(Point position) const;
