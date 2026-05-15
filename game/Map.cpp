@@ -81,7 +81,7 @@ void Map::reset()
 
 void Map::openSquare(Point position)
 {
-    if (m_State == GameState::Playing)
+    if (m_State == GameState::NewGame)
         generateMines(position);
 
     Cell gridSquare = m_Grid[position.x][position.y];
